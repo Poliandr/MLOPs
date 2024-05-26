@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    echo 'Creating a virtual environment, if not created'
+                    sh '''
+                        python3 -m venv "env1"
+                        echo "Virtual environment 'env1' has been created."
+                    '''
+                    echo 'Activating virtual environment'
+                    sh '''
+                        if [ ! -d "env1" ]; then
+                            echo "Virtual environment 'env1' not found"
+                            return 1
+                        fi
+                        if [ -z "$VIRTUAL_ENV" ]; then
+                            chmod +x ./env1/bin/activate
+                            ./env1/bin/activate
+                            echo "Virtual environment 'env1' is activated."
+                        else
+                            echo "Virtual environment has already been activated."
+                        fi
+                    '''
+                    echo 'Dependency installation'
+                    sh '''
+                        if [ ! -f "./lab2/requirements.txt" ]; then
+                            echo "File requirements.txt not found."
+                            return 1
+                        fi
+
+                        # Check if all dependencies from requirements.txt are installed
+                        echo "Dependency installation"
+                        pip3 install -r ./lab2/requirements.txt
+                        echo "All dependencies are installed."
+                    '''
+                }
+            }
+        }
+        stage('DownLoad Data') {
+            steps {
+                sh 'env1/bin/python3 ./lab2/data_creation.py'
+            }
+        }
+        stage('Preprocess Data') {
+            steps {
+                sh 'python3 ./lab2/model_preprocessing.py'
+            }
+        }
+        stage('Train Model') {
+            steps {
+                sh 'python3 ./lab2/model_preparation.py'
+            }
+        }
+        stage('Test Model') {
+            steps {
+                sh 'python3 ./lab2/model_testing.py'
+            }
+        }
+    }
+}
